@@ -1,15 +1,29 @@
 apply plugin: 'com.android.application'
 
-Properties properties = new Properties()
-properties.load(project.rootProject.file('local.properties').newDataInputStream())
-def mapsApiDebugKey = properties.getProperty('MAPS_DEBUG_API_KEY')
+//Properties properties = new Properties()
+//properties.load(project.rootProject.file('local.properties').newDataInputStream())
+//def mapsApiDebugKey = properties.getProperty('MAPS_API_DEBUG_KEY')
+def getLocalGoogleMapApiKey() {
+    Properties properties = new Properties()
+    properties.load(project.rootProject.file('local.properties').newDataInputStream())
+    def localMalKey = properties.getProperty('MAPS_API_DEBUG_KEY')
+    if (localMalKey == null) {
+        // Throw an exception if the property wasn't setup for this
+        throw new GradleException(
+                "Google Map API Key property not found. Define your debug Google Map API Key [google.map.apiKey] in " +
+                        "your local.properties file! E.g.: google.map.apiKey=YOUR_GOOGLE_MAP_API_KEY")
+    }
+    return localMalKey
+}
+
+String googleMapApiKey = System.env.MAP_API_KEY ?: getLocalGoogleMapApiKey()
 
 android {
     compileSdkVersion 29
     buildToolsVersion "29.0.3"
     defaultConfig {
         applicationId "com.example.dublinbusalarm"
-        minSdkVersion 24
+        minSdkVersion 26
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
@@ -19,6 +33,11 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            /* Create a string resource which will be used in AndroidManifest.xml file (from Jenkins or local)*/
+            resValue "string", "google_maps_key", googleMapApiKey
+            println(">>>>>>>>> Google Map API Key: " + googleMapApiKey)
         }
     }
     compileOptions {
@@ -34,8 +53,8 @@ dependencies {
     implementation 'com.squareup.retrofit2:retrofit:2.7.1'
     implementation 'com.squareup.retrofit2:converter-gson:2.7.1'
     implementation 'com.google.android.gms:play-services-maps:17.0.0'
+    implementation 'com.google.android.gms:play-services-location:17.0.0'
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
-
 }

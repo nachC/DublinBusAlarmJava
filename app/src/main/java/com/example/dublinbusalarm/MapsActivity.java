@@ -34,9 +34,14 @@ import java.util.List;
 
 import static java.lang.String.valueOf;
 
+/* TODO:
+ *   - check on logic for when stop is reached (onLocationChanged())
+ **/
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMyLocationButtonClickListener,
         GoogleMap.OnMyLocationClickListener {
 
+    private static final String TAG = "MapsActivity";
     private GoogleMap mMap;
     private Route route;
     private List<Stop> stops;
@@ -60,12 +65,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         Intent intent = getIntent();
         route = intent.getParcelableExtra("route");
-        //Log.d("MapsActivity", route.toString());
         stops = route.getStops();
         currentMarker = null;
 
         // this is here for debugging
-        startAlarm();
+        //startAlarm();
     }
 
 
@@ -93,9 +97,9 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             public void onLocationChanged(Location location) {
                 if(isStopSelected()) {
                     float distanceToStop = location.distanceTo(stopLocation);
-                    Log.d("distanceToStop", valueOf(distanceToStop));
+                    Log.d(TAG + " distanceToStop", valueOf(distanceToStop));
                     if(distanceToStop < 50f && !isStopReached()) {
-                        Log.d("MapsActivity", "reached stop -> firing alarm");
+                        Log.d(TAG, "reached stop -> firing alarm");
                         setStopReached(true);
                         startAlarm();
                         //setStopSelected(false);
@@ -144,12 +148,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onMyLocationClick(@NonNull Location location) {
-        Toast.makeText(this, "Current location:\n" + location, Toast.LENGTH_LONG).show();
+        //Toast.makeText(this, "Current location:\n" + location, Toast.LENGTH_LONG).show();
     }
 
     @Override
     public boolean onMyLocationButtonClick() {
-        Toast.makeText(this, "MyLocation button clicked", Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, "MyLocation button clicked", Toast.LENGTH_SHORT).show();
         // Return false so that we don't consume the event and the default behavior still occurs
         // (the camera animates to the user's current position).
         return false;
@@ -169,6 +173,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         stopLocation.setLongitude(marker.getPosition().longitude);
         marker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
         setStopSelected(true);
+        startLocationService();
         return false;
     }
 
@@ -190,6 +195,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(), 0, alarmIntent, 0);
         AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(System.currentTimeMillis()+500, pi);
         alarmManager.setAlarmClock(alarmClockInfo, pi);
+    }
+
+    public void startLocationService() {
+        Log.d(TAG, "startLocationService called.");
+        Intent serviceIntent = new Intent(this, LocationService.class);
+        MapsActivity.this.startForegroundService(serviceIntent);
     }
 
     public boolean isStopSelected() {

@@ -1,5 +1,6 @@
 package com.example.dublinbusalarm;
 
+import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -19,23 +20,36 @@ import androidx.core.app.NotificationManagerCompat;
 import static android.app.Notification.EXTRA_NOTIFICATION_ID;
 import static android.provider.AlarmClock.ACTION_DISMISS_ALARM;
 
+/* TODO:
+*   - what to do after alarm notification gets dismissed. Send back to MainActivity?
+**/
+
 public class AlarmReceiver extends BroadcastReceiver {
 
+    private static final String TAG = "AlarmReceiver";
     NotificationManagerCompat notificationManager;
     private static final int NOTIFICATION_ID = 0;
+    private static final String ALARM_CHANNEL_ID = "alarm_channel";
 
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d("AlarmReceiver", "called");
-        //Toast.makeText(context, "ALARM", Toast.LENGTH_SHORT).show();
         if (intent.hasExtra(EXTRA_NOTIFICATION_ID) && intent.getStringExtra(EXTRA_NOTIFICATION_ID).equals("dismiss")) {
-            Log.i("extra", "dismiss clicked in notification");
+            Log.d(TAG, "dismiss clicked in notification");
+
+            Intent serviceIntent = new Intent(context, LocationService.class);
+            context.stopService(serviceIntent);
+
             Intent stopRingtoneIntent = new Intent(context, RingtonePlayService.class);
             context.stopService(stopRingtoneIntent);
             notificationManager = NotificationManagerCompat.from(context);
             notificationManager.cancel(NOTIFICATION_ID);
+
+            //Intent backToMainActivityIntent = new Intent(context, MainActivity.class);
+            //backToMainActivityIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            //context.startActivity(backToMainActivityIntent);
         } else {
-            Log.i("extra", "intent to initiate alarm");
+            Log.d(TAG, "intent to initiate alarm");
             Intent startRingtoneIntent = new Intent(context, RingtonePlayService.class);
             context.startService(startRingtoneIntent);
             createNotification(context);
@@ -49,7 +63,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         PendingIntent dismissPendingIntent =
                 PendingIntent.getBroadcast(context, 0, dismissIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, "notify_channel")
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, ALARM_CHANNEL_ID)
                 .setSmallIcon(R.drawable.common_google_signin_btn_icon_dark)
                 .setLargeIcon(BitmapFactory.decodeResource(context.getResources(), R.mipmap.ic_launcher))
                 .setContentTitle("Arrived to stop")

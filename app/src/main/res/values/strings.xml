@@ -3,8 +3,13 @@
     <string name="inputLine">Enter Bus Line (eg. 66b)</string>
     <string name="searchBtn">Search</string>
     <string name="title_activity_maps">Map</string>
-    <string name="channel_name">notification_channel</string>
-    <string name="channel_description">channel for notifications</string>
+
+    <!-- Notification Channel strings -->
+    <string name="alarm_channel_name">Alarm notification_channel</string>
+    <string name="alarm_channel_description">channel for notifications of Alarm</string>
+    <string name="location_service_channel_name">Location Service notification channel</string>
+    <string name="location_service_channel_description">channel for notifications of Location Service</string>
     <string name="CHANNEL_ID">notify_channel</string>
+
     <string name="permission_text">This app requires access to your location to work.</string>
 </resources>

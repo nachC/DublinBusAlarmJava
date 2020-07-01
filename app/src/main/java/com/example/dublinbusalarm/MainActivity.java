@@ -30,6 +30,11 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+/*TODO
+*  - consider changing location of createNotificationChannel() to activity were the notification is created.
+*  - In this case it's the channel for the alarm notification, consider AlarmReceiver class
+* */
+
 public class MainActivity extends AppCompatActivity {
 
     EditText inputLineEditText;
@@ -40,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String BASE_URL = "https://data.smartdublin.ie/";
     private static final String OPERATOR = "bac";
-    private static final String CHANNEL_ID = "notify_channel";
+    private static final String CHANNEL_ID = "alarm_channel";
     private static final int FINE_LOCATION = 1;
 
     @Override
@@ -76,15 +81,15 @@ public class MainActivity extends AppCompatActivity {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = getString(R.string.channel_name);
-            String description = getString(R.string.channel_description);
+            CharSequence name = getString(R.string.alarm_channel_name);
+            String description = getString(R.string.alarm_channel_description);
             int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
+            NotificationChannel alarmChannel = new NotificationChannel(CHANNEL_ID, name, importance);
+            alarmChannel.setDescription(description);
             // Register the channel with the system; you can't change the importance
             // or other notification behaviors after this
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
+            notificationManager.createNotificationChannel(alarmChannel);
         }
     }
 
