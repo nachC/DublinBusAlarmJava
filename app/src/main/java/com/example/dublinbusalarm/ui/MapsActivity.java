@@ -1,4 +1,4 @@
-package com.example.dublinbusalarm;
+package com.example.dublinbusalarm.ui;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -16,8 +16,12 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
-import android.widget.Toast;
 
+import com.example.dublinbusalarm.receivers.AlarmReceiver;
+import com.example.dublinbusalarm.services.LocationService;
+import com.example.dublinbusalarm.R;
+import com.example.dublinbusalarm.models.Route;
+import com.example.dublinbusalarm.models.Stop;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -27,7 +31,6 @@ import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.List;
@@ -43,16 +46,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final String TAG = "MapsActivity";
     private GoogleMap mMap;
-    private Route route;
-    private List<Stop> stops;
-
-    LocationManager locationManager;
-    LocationListener locationListener;
-    Location stopLocation;
-    boolean stopSelected = false;
-    boolean stopReached = false;
-
+    private LocationManager locationManager;
+    private LocationListener locationListener;
+    private Location stopLocation;
     private Marker currentMarker;
+
+    private Route route; // object will contain bus route info
+    private List<Stop> stops; // object will contain stops info for the selected Route
+
+    private boolean stopReached = false; // flag for when the selected stop is reached
+    private boolean stopSelected = false; // flag for when a stop is selected
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,10 +64,13 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
+        assert mapFragment != null;
         mapFragment.getMapAsync(this);
 
+        // get the intent info from the activity we come from (RoutesActivity)
         Intent intent = getIntent();
         route = intent.getParcelableExtra("route");
+        assert route != null;
         stops = route.getStops();
         currentMarker = null;
 
@@ -90,19 +96,24 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.setOnMyLocationClickListener(this);
 
         locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+        // location object for the stop selected
+        // This instance will hold the Lat and Lang for the selected stop through the onMarkerClick method
         stopLocation = new Location("stopLocation");
 
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
+                // check if the user has selected a stop
                 if(isStopSelected()) {
+                    // get and store the distance from the user to the stop selected
                     float distanceToStop = location.distanceTo(stopLocation);
-                    Log.d(TAG + " distanceToStop", valueOf(distanceToStop));
+                    //Log.d(TAG + " distanceToStop", valueOf(distanceToStop));
                     if(distanceToStop < 50f && !isStopReached()) {
+                        // we are 50 meters or less from the stop and we haven't reached the stop
                         Log.d(TAG, "reached stop -> firing alarm");
                         setStopReached(true);
+                        setStopSelected(false);
                         startAlarm();
-                        //setStopSelected(false);
                     }
                 }
             }
@@ -132,15 +143,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 0, 0, locationListener);
         }
 
+        // adding markers for each stop and drawing the lines between all the stops
         LatLng firstMarker = new LatLng(stops.get(0).getLat(), stops.get(0).getLng());
         for(int i=0 ; i<stops.size() ; i++) {
             mMap.addMarker(new MarkerOptions().position(new LatLng(stops.get(i).getLat(), stops.get(i).getLng())));
             if (i != stops.size()-1) {
-                Polyline polyline = googleMap.addPolyline(new PolylineOptions()
-                        .add(new LatLng(stops.get(i).getLat(), stops.get(i).getLng()))
-                        .add(new LatLng(stops.get(i+1).getLat(), stops.get(i+1).getLng())));
+                googleMap.addPolyline(new PolylineOptions()
+                    .add(new LatLng(stops.get(i).getLat(), stops.get(i).getLng()))
+                    .add(new LatLng(stops.get(i+1).getLat(), stops.get(i+1).getLng())));
             }
         }
+        // set the camera position at launch to the first stop
         CameraPosition cameraPosition = new CameraPosition.Builder().target(firstMarker).zoom(12).build();
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
         mMap.setOnMarkerClickListener(this);
@@ -161,17 +174,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public boolean onMarkerClick(Marker marker) {
-        //Log.d("Marker clicked", marker.getPosition().toString());
         if (currentMarker != null) {
+            // set the current selected marker to the default marker icon (not selected anymore)
             currentMarker.setIcon(BitmapDescriptorFactory.defaultMarker());
-            if (marker.getTag() != currentMarker.getTag()) {
+            if (!marker.equals(currentMarker)) {
                 setStopReached(false);
             }
         }
+        // save selected marker as current to work with it
         currentMarker = marker;
-        stopLocation.setLatitude(marker.getPosition().latitude);
-        stopLocation.setLongitude(marker.getPosition().longitude);
-        marker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+        // set the coordinates of the Location object using the marker's location
+        stopLocation.setLatitude(currentMarker.getPosition().latitude);
+        stopLocation.setLongitude(currentMarker.getPosition().longitude);
+
+        currentMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
+
         setStopSelected(true);
         startLocationService();
         return false;
@@ -188,15 +205,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
+    // method to start the alarm once the selected stop is reached
     public void startAlarm() {
         Log.d("MapsActivity", "startAlarm executed");
         Intent alarmIntent = new Intent(MapsActivity.this, AlarmReceiver.class);
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(), 0, alarmIntent, 0);
-        AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(System.currentTimeMillis()+500, pi);
-        alarmManager.setAlarmClock(alarmClockInfo, pi);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, alarmIntent, 0);
+        AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(System.currentTimeMillis()+500, pendingIntent);
+        alarmManager.setAlarmClock(alarmClockInfo, pendingIntent);
     }
 
+    // method to start the Location Foreground Service when a stop (marker) is selected in onMarkerClick()
     public void startLocationService() {
         Log.d(TAG, "startLocationService called.");
         Intent serviceIntent = new Intent(this, LocationService.class);

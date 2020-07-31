@@ -1,5 +1,4 @@
-package com.example.dublinbusalarm;
-
+package com.example.dublinbusalarm.ui;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -24,29 +23,28 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.dublinbusalarm.models.BusRoute;
+import com.example.dublinbusalarm.api.DublinBusApi;
+import com.example.dublinbusalarm.R;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-/*TODO
-*  - consider changing location of createNotificationChannel() to activity were the notification is created.
-*  - In this case it's the channel for the alarm notification, consider AlarmReceiver class
-* */
-
 public class MainActivity extends AppCompatActivity {
 
     EditText inputLineEditText;
     TextView permissionText;
+    Button searchBtn, permissionBtn;
     ProgressBar progressBar;
     DublinBusApi dublinBusApi;
-    Button searchBtn, permissionBtn;
 
-    private static final String BASE_URL = "https://data.smartdublin.ie/";
-    private static final String OPERATOR = "bac";
-    private static final String CHANNEL_ID = "alarm_channel";
-    private static final int FINE_LOCATION = 1;
+    private static final String BASE_URL = "https://data.smartdublin.ie/"; //base url for making API calls
+    private static final String OPERATOR = "bac"; //this specifies that we're requesting info about the "bus" service (and not "rail" service, for example)
+    private static final String CHANNEL_ID = "alarm_channel"; //identifier for the channel that handles the alarms
+    private static final int FINE_LOCATION = 1; //helper flag for FINE LOCATION request code
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,22 +56,55 @@ public class MainActivity extends AppCompatActivity {
         searchBtn = findViewById(R.id.searchBtn);
         permissionBtn = findViewById(R.id.permissionBtn);
 
+        // create retrofit instance to handle the api calls using the BASE_URL and Gson Converter
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
-
         dublinBusApi = retrofit.create(DublinBusApi.class);
 
         createNotificationChannel();
         enableApp();
     }
 
+    // this method enables the main functionality of the app
+    // here we check for location permission, without it, the app can't work
+    public void enableApp() {
+        // check if fine-location access is already available
+        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            // if it's available -> enable the app's functionality
+            searchBtn.setEnabled(true);
+            permissionText.setVisibility(View.INVISIBLE);
+            permissionBtn.setVisibility(View.INVISIBLE);
+        } else {
+            // fine-location access not granted
+            searchBtn.setEnabled(false);
+            permissionText.setVisibility(View.VISIBLE);
+            // request permission for access
+            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION);
+        }
+    }
+
     @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 0) {
-            enableApp();
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == FINE_LOCATION) {
+            // received permission for fine-location
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                searchBtn.setEnabled(true);
+                permissionText.setVisibility(View.INVISIBLE);
+                permissionBtn.setVisibility(View.INVISIBLE);
+                Toast.makeText(this, "Permission granted. You can search now", Toast.LENGTH_LONG).show();
+            } else {
+                Toast.makeText(this, "Permission was not granted", Toast.LENGTH_SHORT).show();
+                permissionBtn.setVisibility(View.VISIBLE);
+                if (!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
+                    permissionBtn.setText(R.string.settings_button);
+                } else {
+                    permissionBtn.setText(R.string.allow_button);
+                }
+            }
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
     }
 
@@ -93,14 +124,15 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // method handling the event of finding the bus line and firing the intent to show the routes in the RoutesActivity
     public void searchLine(View view) {
         // check if fine-location access is already available
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // if it's available -> enable the app's functionality
+            // if it's available -> continue with normal app flow
             String userInput = inputLineEditText.getText().toString();
             if(userInput.isEmpty()) {
                 inputLineEditText.setError("Enter a bus line");
-                Toast.makeText(MainActivity.this, "Enter a bus line", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(MainActivity.this, "Enter a bus line", Toast.LENGTH_SHORT).show();
             } else {
                 // validate input
                 if (userInput.matches("[a-zA-Z0-9 *]+$")) {
@@ -117,14 +149,17 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onResponse(Call<BusRoute> call, Response<BusRoute> response) {
                             progressBar.setVisibility(View.INVISIBLE);
+                            assert response.body() != null;
                             if (!response.body().getErrorCode().equals("0")) {
                                 Log.e("Error", "No results found");
                             } else {
+                                // on a successful response set the necessary fields in a new instance of BusRoute
                                 BusRoute busRoute = new BusRoute();
                                 busRoute.setErrorCode(response.body().getErrorCode());
                                 busRoute.setRouteName(response.body().getRouteName());
                                 busRoute.setRoutes(response.body().getRoutes());
 
+                                // create intent for RoutesActivity and add the object created above to access from RoutesActivity
                                 Intent intent = new Intent(getApplicationContext(), RoutesActivity.class);
                                 intent.putExtra("busRoute", busRoute);
                                 startActivity(intent);
@@ -151,57 +186,27 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    // this method enables the main functionality of the app
-    // here we check for location permission, without it, the app can't work
-    public void enableApp() {
-        // check if fine-location access is already available
-        if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-            // if it's available -> enable the app's functionality
-            searchBtn.setEnabled(true);
-            permissionText.setVisibility(View.INVISIBLE);
-            permissionBtn.setVisibility(View.INVISIBLE);
-        } else {
-            // fine-location access not granted
-            searchBtn.setEnabled(false);
-            permissionText.setVisibility(View.VISIBLE);
-            // request permission for access
-            requestPermissions(new String[]{Manifest.permission.ACCESS_FINE_LOCATION}, FINE_LOCATION);
-        }
-    }
-
+    // method called when clicking the permissionBtn
     public void openPermissionSettings(View view) {
+        // check if the button is for routing the user to the "settings" menu
         if (permissionBtn.getText().equals("settings")) {
-            // add text with link to settings to add permission manually
             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             Uri uri = Uri.fromParts("package", getPackageName(), null);
             intent.setData(uri);
+            // here we route the user to the Settings menu to set the permissions manually
+            // we'll handle the result with the onActivityResult method
             startActivityForResult(intent, 0);
-            //startActivity(intent);
         } else {
             enableApp();
         }
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        if (requestCode == FINE_LOCATION) {
-            // received permission for fine-location
-            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                searchBtn.setEnabled(true);
-                permissionText.setVisibility(View.INVISIBLE);
-                permissionBtn.setVisibility(View.INVISIBLE);
-                Toast.makeText(this, "Permission granted. You can search now", Toast.LENGTH_LONG).show();
-            } else {
-                Toast.makeText(this, "Permission was not granted", Toast.LENGTH_SHORT).show();
-                permissionBtn.setVisibility(View.VISIBLE);
-                if (!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
-                    permissionBtn.setText("settings");
-                } else {
-                    permissionBtn.setText("allow");
-                }
-            }
-        } else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        // if we come from the SETTINGS screen and user provided location permission -> enableApp
+        if (requestCode == 0) {
+            enableApp();
         }
     }
 }

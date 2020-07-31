@@ -19,7 +19,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
         <service
-            android:name=".LocationService"
+            android:name=".services.LocationService"
             android:enabled="true"
             android:exported="true"
             android:stopWithTask="true"/>
@@ -36,22 +36,22 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".MapsActivity"
+            android:name=".ui.MapsActivity"
             android:label="@string/title_activity_maps" />
-        <activity android:name=".MainActivity">
+        <activity android:name=".ui.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".RoutesActivity" />
+        <activity android:name=".ui.RoutesActivity" />
 
         <service
-            android:name=".RingtonePlayService"
+            android:name=".services.RingtonePlayService"
             android:enabled="true" />
 
-        <receiver android:name=".AlarmReceiver" />
+        <receiver android:name=".receivers.AlarmReceiver" />
     </application>
 
 </manifest>

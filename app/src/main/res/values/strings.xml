@@ -12,4 +12,7 @@
     <string name="CHANNEL_ID">notify_channel</string>
 
     <string name="permission_text">This app requires access to your location to work.</string>
+
+    <string name="settings_button">settings</string>
+    <string name="allow_button">allow</string>
 </resources>

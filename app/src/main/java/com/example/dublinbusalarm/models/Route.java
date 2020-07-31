@@ -1,4 +1,4 @@
-package com.example.dublinbusalarm;
+package com.example.dublinbusalarm.models;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -24,7 +24,7 @@ public class Route implements Parcelable {
     @Expose
     List<Stop> stops; //holds the 'stops' list from the JSON response
 
-    public Route() {};
+    public Route() {}
 
     public String getOrigin() {
         return origin;

@@ -1,4 +1,4 @@
-package com.example.dublinbusalarm;
+package com.example.dublinbusalarm.services;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -11,6 +11,7 @@ import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
+import com.example.dublinbusalarm.R;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationServices;
 

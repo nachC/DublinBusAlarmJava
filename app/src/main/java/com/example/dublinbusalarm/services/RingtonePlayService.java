@@ -1,4 +1,4 @@
-package com.example.dublinbusalarm;
+package com.example.dublinbusalarm.services;
 
 import android.app.Service;
 import android.content.Intent;
