@@ -1,6 +1,6 @@
 # Dublin Bus Alarm
 
-Dublin Bus Alarm is an android app being developed using Java, where the user can choose a Bus stop using Google Maps and an alarm will let the user know when the stop was reached.
+Dublin Bus Alarm is a native android app being developed using Java, where the user can choose a Bus stop (from the Dublin Bus Service) using Google Maps and an alarm will let the user know when the stop was reached.
 
 1st -> type the bus line and tap search
 
