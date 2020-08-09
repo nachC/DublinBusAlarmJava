@@ -5,9 +5,9 @@
     <string name="title_activity_maps">Map</string>
 
     <!-- Notification Channel strings -->
-    <string name="alarm_channel_name">Alarm notification_channel</string>
+    <string name="alarm_channel_name">Alarm notification</string>
     <string name="alarm_channel_description">channel for notifications of Alarm</string>
-    <string name="location_service_channel_name">Location Service notification channel</string>
+    <string name="location_service_channel_name">Location Service notification</string>
     <string name="location_service_channel_description">channel for notifications of Location Service</string>
     <string name="CHANNEL_ID">notify_channel</string>
 

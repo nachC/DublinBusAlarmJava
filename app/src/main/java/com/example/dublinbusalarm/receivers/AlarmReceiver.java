@@ -22,10 +22,10 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     private static final String TAG = "AlarmReceiver";
     private static final String NOTIFICATION_TITLE = "Arrived to Stop"; // holds the title of the alarm notification
-    private static final String NOTIFICATION_CONTEXT = "Time to get out!"; // holds more info below the title of the notification
+    private static final String NOTIFICATION_CONTEXT = "Tap to dismiss alarm"; // holds more info below the title of the notification
     private static final String NOTIFICATION_DISMISS = "dismiss"; // holds the text to show as the notification's button
-    private static final int NOTIFICATION_ID = 0;
     private static final String ALARM_CHANNEL_ID = "alarm_channel";
+    private static final int NOTIFICATION_ID = 0;
 
     NotificationManagerCompat notificationManager;
 

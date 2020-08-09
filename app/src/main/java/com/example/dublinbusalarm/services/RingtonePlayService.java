@@ -2,6 +2,7 @@ package com.example.dublinbusalarm.services;
 
 import android.app.Service;
 import android.content.Intent;
+import android.media.AudioAttributes;
 import android.media.Ringtone;
 import android.media.RingtoneManager;
 import android.os.IBinder;
@@ -23,6 +24,7 @@ public class RingtonePlayService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.d("RingtoneService", "onStartCommand. Playing ringtone");
         ringtone = RingtoneManager.getRingtone(getApplicationContext(), RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM));
+        ringtone.setAudioAttributes(new AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_ALARM).build());
         ringtone.play();
 
         return START_NOT_STICKY;

@@ -41,10 +41,12 @@ public class MainActivity extends AppCompatActivity {
     ProgressBar progressBar;
     DublinBusApi dublinBusApi;
 
-    private static final String BASE_URL = "https://data.smartdublin.ie/"; //base url for making API calls
-    private static final String OPERATOR = "bac"; //this specifies that we're requesting info about the "bus" service (and not "rail" service, for example)
-    private static final String CHANNEL_ID = "alarm_channel"; //identifier for the channel that handles the alarms
-    private static final int FINE_LOCATION = 1; //helper flag for FINE LOCATION request code
+    private static final String TAG = "MainActivity";
+    private static final String BASE_URL = "https://data.smartdublin.ie/"; // base url for making API calls
+    private static final String OPERATOR = "bac"; // this specifies that we're requesting info about the "bus" service (and not "rail" service, for example)
+    private static final String CHANNEL_ID = "alarm_channel"; // identifier for the channel that handles the alarms
+    private static final int FINE_LOCATION = 1; // helper flag for FINE LOCATION request code
+    private static final String NOT_RESULTS_FOUND_CODE = "0"; // flag to check for "no results fund" when querying the Dublin Bus API
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -132,9 +134,8 @@ public class MainActivity extends AppCompatActivity {
             String userInput = inputLineEditText.getText().toString();
             if(userInput.isEmpty()) {
                 inputLineEditText.setError("Enter a bus line");
-                //Toast.makeText(MainActivity.this, "Enter a bus line", Toast.LENGTH_SHORT).show();
             } else {
-                // validate input
+                // validate input (only allow letters and numbers)
                 if (userInput.matches("[a-zA-Z0-9 *]+$")) {
                     // Hide the keyboard after clicking search
                     InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -150,8 +151,9 @@ public class MainActivity extends AppCompatActivity {
                         public void onResponse(Call<BusRoute> call, Response<BusRoute> response) {
                             progressBar.setVisibility(View.INVISIBLE);
                             assert response.body() != null;
-                            if (!response.body().getErrorCode().equals("0")) {
-                                Log.e("Error", "No results found");
+                            if (!response.body().getErrorCode().equals(NOT_RESULTS_FOUND_CODE)) {
+                                Log.e(TAG, "No results found");
+                                // here show user message (advice to double check bus line entered)
                             } else {
                                 // on a successful response set the necessary fields in a new instance of BusRoute
                                 BusRoute busRoute = new BusRoute();
@@ -169,8 +171,9 @@ public class MainActivity extends AppCompatActivity {
                         @Override
                         public void onFailure(Call<BusRoute> call, Throwable t) {
                             progressBar.setVisibility(View.INVISIBLE);
-                            Log.e("MainActivity", "onFailure something went wrong: " + t.getMessage());
-                            Toast.makeText(MainActivity.this, "ERROR", Toast.LENGTH_SHORT).show();
+                            Log.e(TAG, "onFailure something went wrong: " + t.getMessage());
+                            // show user error message (advice user to check internet connection)
+                            Toast.makeText(MainActivity.this, "ERROR: " + t.getMessage(), Toast.LENGTH_SHORT).show();
                         }
                     });
                 } else {

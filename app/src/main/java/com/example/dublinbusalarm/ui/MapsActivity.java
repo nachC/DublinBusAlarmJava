@@ -57,6 +57,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean stopReached = false; // flag for when the selected stop is reached
     private boolean stopSelected = false; // flag for when a stop is selected
 
+    private static final float triggerDistToStop = 50f; // distance in meters from stop where to trigger the alarm
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -108,7 +110,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     // get and store the distance from the user to the stop selected
                     float distanceToStop = location.distanceTo(stopLocation);
                     //Log.d(TAG + " distanceToStop", valueOf(distanceToStop));
-                    if(distanceToStop < 50f && !isStopReached()) {
+                    if(distanceToStop < triggerDistToStop && !isStopReached()) {
                         // we are 50 meters or less from the stop and we haven't reached the stop
                         Log.d(TAG, "reached stop -> firing alarm");
                         setStopReached(true);
