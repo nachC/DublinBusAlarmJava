@@ -55,13 +55,13 @@ public class RoutesActivity extends AppCompatActivity {
 
         for (Route route : routes) {
             if (byDateUpdated.test(route)) {
-                updatedRoutes.put(route.getOrigin() + " -> " + route.getDestination(), route);
-                originToDestination.add(route.getOrigin() + " -> " + route.getDestination());
+                updatedRoutes.put(route.getOrigin() + " to " + route.getDestination(), route);
+                originToDestination.add(route.getOrigin() + " to " + route.getDestination());
             }
         }
 
         // display the list view with the routes
-        final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>
+        final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>
                 (this, android.R.layout.simple_list_item_1, originToDestination);
         routesListView.setAdapter(arrayAdapter);
 

@@ -18,8 +18,8 @@ import com.google.android.gms.location.LocationServices;
 public class LocationService extends Service {
 
     private static final String TAG = "LocationService";
-    private FusedLocationProviderClient fusedLocationClient;
     private static final String LOCATION_SERVICE_CHANNEL_ID = "location_service_channel";
+    //private FusedLocationProviderClient fusedLocationClient;
 
     public LocationService() {
     }
@@ -34,7 +34,7 @@ public class LocationService extends Service {
     public void onCreate() {
         super.onCreate();
 
-        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+        //fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = getString(R.string.location_service_channel_name);
@@ -47,9 +47,7 @@ public class LocationService extends Service {
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
             notificationManager.createNotificationChannel(locationServiceChannel);
 
-            Notification notification = new NotificationCompat.Builder(this, LOCATION_SERVICE_CHANNEL_ID)
-                    .setContentTitle("Title")
-                    .setContentText("Text").build();
+            Notification notification = new NotificationCompat.Builder(this, LOCATION_SERVICE_CHANNEL_ID).build();
 
             startForeground(1, notification);
         }

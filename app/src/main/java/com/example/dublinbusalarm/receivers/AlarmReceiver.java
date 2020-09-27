@@ -35,7 +35,7 @@ public class AlarmReceiver extends BroadcastReceiver {
         // Here we check if the alarm receiver was invoked to dismiss the ongoing alarm
         // or to set an alarm.
         // First we check if the user clicked the DISMISS button on the notification
-        if (intent.hasExtra(EXTRA_NOTIFICATION_ID) && intent.getStringExtra(EXTRA_NOTIFICATION_ID).equals("dismiss")) {
+        if (intent.hasExtra(EXTRA_NOTIFICATION_ID) && intent.getStringExtra(EXTRA_NOTIFICATION_ID).equals(NOTIFICATION_DISMISS)) {
             // user dismissed the alarm
             Log.d(TAG, "dismiss clicked in notification");
 

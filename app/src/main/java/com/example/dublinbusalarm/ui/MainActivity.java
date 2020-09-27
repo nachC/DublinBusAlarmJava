@@ -5,9 +5,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -97,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
                 permissionBtn.setVisibility(View.INVISIBLE);
                 Toast.makeText(this, "Permission granted. You can search now", Toast.LENGTH_LONG).show();
             } else {
-                Toast.makeText(this, "Permission was not granted", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, "Permission was not granted", Toast.LENGTH_SHORT).show();
                 permissionBtn.setVisibility(View.VISIBLE);
                 if (!shouldShowRequestPermissionRationale(Manifest.permission.ACCESS_FINE_LOCATION)) {
                     permissionBtn.setText(R.string.settings_button);
@@ -140,7 +142,6 @@ public class MainActivity extends AppCompatActivity {
                     // Hide the keyboard after clicking search
                     InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                     imm.hideSoftInputFromWindow(inputLineEditText.getWindowToken(), 0);
-
                     // Show progress bar
                     progressBar = findViewById(R.id.progressBar);
                     progressBar.setVisibility(View.VISIBLE);
@@ -154,6 +155,19 @@ public class MainActivity extends AppCompatActivity {
                             if (!response.body().getErrorCode().equals(NOT_RESULTS_FOUND_CODE)) {
                                 Log.e(TAG, "No results found");
                                 // here show user message (advice to double check bus line entered)
+                                Toast.makeText(MainActivity.this, "No results found. Please check bus line.", Toast.LENGTH_LONG).show();
+
+                                /*
+                                //use this to let the user know about the possible power management issue with the alarm
+                                new AlertDialog.Builder(MainActivity.this)
+                                        .setTitle("Tip")
+                                        .setMessage("Some devices...")
+                                        // A null listener allows the button to dismiss the dialog and take no further action.
+                                        .setNegativeButton(android.R.string.ok, null)
+                                        .show();
+
+                                 */
+
                             } else {
                                 // on a successful response set the necessary fields in a new instance of BusRoute
                                 BusRoute busRoute = new BusRoute();
@@ -173,11 +187,11 @@ public class MainActivity extends AppCompatActivity {
                             progressBar.setVisibility(View.INVISIBLE);
                             Log.e(TAG, "onFailure something went wrong: " + t.getMessage());
                             // show user error message (advice user to check internet connection)
-                            Toast.makeText(MainActivity.this, "ERROR: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, "Oops... please, check your internet connection.", Toast.LENGTH_LONG).show();
                         }
                     });
                 } else {
-                    Toast.makeText(MainActivity.this, "Use only letters and numbers", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Please, use only letters and numbers", Toast.LENGTH_LONG).show();
                 }
             }
         } else {

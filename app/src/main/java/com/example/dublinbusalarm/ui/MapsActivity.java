@@ -7,6 +7,7 @@ import androidx.fragment.app.FragmentActivity;
 
 import android.Manifest;
 import android.app.AlarmManager;
+import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
@@ -37,10 +38,6 @@ import java.util.List;
 
 import static java.lang.String.valueOf;
 
-/* TODO:
- *   - check on logic for when stop is reached (onLocationChanged())
- **/
-
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMyLocationButtonClickListener,
         GoogleMap.OnMyLocationClickListener {
 
@@ -50,6 +47,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationListener locationListener;
     private Location stopLocation;
     private Marker currentMarker;
+    private AlertDialog alertDialog;
 
     private Route route; // object will contain bus route info
     private List<Stop> stops; // object will contain stops info for the selected Route
@@ -116,6 +114,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         setStopReached(true);
                         setStopSelected(false);
                         startAlarm();
+
+                        //alert dialog to allow the user to stop the alarm from the maps activity
+                        alertDialog = new AlertDialog.Builder(MapsActivity.this)
+                                        .setTitle("Title")
+                                        .setMessage("Message")
+                                        // A null listener allows the button to dismiss the dialog and take no further action.
+                                        .setNegativeButton(android.R.string.ok, null)
+                                        .show();
                     }
                 }
             }
@@ -148,7 +154,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // adding markers for each stop and drawing the lines between all the stops
         LatLng firstMarker = new LatLng(stops.get(0).getLat(), stops.get(0).getLng());
         for(int i=0 ; i<stops.size() ; i++) {
-            mMap.addMarker(new MarkerOptions().position(new LatLng(stops.get(i).getLat(), stops.get(i).getLng())));
+            mMap.addMarker(new MarkerOptions()
+                    .position(new LatLng(stops.get(i).getLat(), stops.get(i).getLng()))
+                    .title(getResources().getString(R.string.mapMarkerInfoViewTitle))
+                    .snippet(stops.get(i).getName()));
             if (i != stops.size()-1) {
                 googleMap.addPolyline(new PolylineOptions()
                     .add(new LatLng(stops.get(i).getLat(), stops.get(i).getLng()))
@@ -182,6 +191,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             if (!marker.equals(currentMarker)) {
                 setStopReached(false);
             }
+            currentMarker.showInfoWindow();
         }
         // save selected marker as current to work with it
         currentMarker = marker;
@@ -238,5 +248,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     public void setStopReached(boolean stopReached) {
         this.stopReached = stopReached;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // if the alertDialog for stopping the alarm is being shown then dismiss it before exiting activity
+        if(alertDialog != null) {
+            alertDialog.dismiss();
+        }
     }
 }
