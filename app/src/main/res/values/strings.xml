@@ -18,5 +18,8 @@
     <string name="settings_button">settings</string>
     <string name="allow_button">allow</string>
 
+    <!-- RoutesActivity -->
+    <string name="header_text">select a route</string>
+
     <!-- Error handling -->
 </resources>

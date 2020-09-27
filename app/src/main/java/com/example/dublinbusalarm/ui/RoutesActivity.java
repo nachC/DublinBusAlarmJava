@@ -1,6 +1,7 @@
 package com.example.dublinbusalarm.ui;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.ContextCompat;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,6 +10,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 import com.example.dublinbusalarm.models.BusRoute;
 import com.example.dublinbusalarm.R;
@@ -59,6 +61,15 @@ public class RoutesActivity extends AppCompatActivity {
                 originToDestination.add(route.getOrigin() + " to " + route.getDestination());
             }
         }
+
+        TextView textView = new TextView(RoutesActivity.this);
+        textView.setClickable(true);
+        textView.setText(R.string.header_text);
+        textView.setAllCaps(true);
+        textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
+        textView.setTextSize(24);
+        textView.setTextColor(ContextCompat.getColor(RoutesActivity.this, R.color.colorYellowAccent));
+        routesListView.addHeaderView(textView);
 
         // display the list view with the routes
         final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>
