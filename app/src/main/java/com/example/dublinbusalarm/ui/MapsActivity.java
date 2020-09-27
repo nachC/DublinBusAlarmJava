@@ -10,6 +10,7 @@ import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
@@ -36,6 +37,8 @@ import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.List;
 
+import static android.app.Notification.EXTRA_NOTIFICATION_ID;
+import static android.provider.AlarmClock.ACTION_DISMISS_ALARM;
 import static java.lang.String.valueOf;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMyLocationButtonClickListener,
@@ -56,6 +59,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean stopSelected = false; // flag for when a stop is selected
 
     private static final float triggerDistToStop = 50f; // distance in meters from stop where to trigger the alarm
+
+    private static final String NOTIFICATION_DISMISS = "dismiss";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,10 +122,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
                         //alert dialog to allow the user to stop the alarm from the maps activity
                         alertDialog = new AlertDialog.Builder(MapsActivity.this)
-                                        .setTitle("Title")
-                                        .setMessage("Message")
+                                        .setTitle("Time to get out!")
+                                        .setMessage("You're close to your destination.")
                                         // A null listener allows the button to dismiss the dialog and take no further action.
-                                        .setNegativeButton(android.R.string.ok, null)
+                                        .setPositiveButton(NOTIFICATION_DISMISS, (dialog, which) -> {
+                                            Intent dismissIntent = new Intent(MapsActivity.this, AlarmReceiver.class);
+                                            dismissIntent.setAction(ACTION_DISMISS_ALARM);
+                                            dismissIntent.putExtra(EXTRA_NOTIFICATION_ID, NOTIFICATION_DISMISS);
+                                            sendBroadcast(dismissIntent);
+                                        })
                                         .show();
                     }
                 }
