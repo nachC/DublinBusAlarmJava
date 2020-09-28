@@ -1,10 +1,17 @@
 package com.example.dublinbusalarm.ui;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentSender;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
@@ -15,6 +22,17 @@ import android.widget.TextView;
 import com.example.dublinbusalarm.models.BusRoute;
 import com.example.dublinbusalarm.R;
 import com.example.dublinbusalarm.models.Route;
+import com.google.android.gms.common.api.ApiException;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.LocationSettingsStatusCodes;
+import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.tasks.OnCanceledListener;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,12 +46,47 @@ public class RoutesActivity extends AppCompatActivity {
     ListView routesListView;
     List<Route> routes;
 
+    private SettingsClient settingsClient;
+    private LocationSettingsRequest locationSettingsRequest;
+    private static final int REQUEST_CHECK_SETTINGS = 214;
+    private static final int REQUEST_ENABLE_GPS = 516;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_routes);
 
         routesListView = findViewById(R.id.routesListView);
+
+        // check if user has location enabled
+        // if not, show dialog to turn on location or send to settings
+        LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder();
+        builder.addLocationRequest(new LocationRequest().setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY));
+        builder.setAlwaysShow(true);
+        locationSettingsRequest = builder.build();
+
+        settingsClient = LocationServices.getSettingsClient(RoutesActivity.this);
+        settingsClient
+                .checkLocationSettings(locationSettingsRequest)
+                .addOnSuccessListener(locationSettingsResponse -> {
+                    //Success Perform Task Here
+                })
+                .addOnFailureListener(e -> {
+                    int statusCode = ((ApiException) e).getStatusCode();
+                    switch (statusCode) {
+                        case LocationSettingsStatusCodes.RESOLUTION_REQUIRED:
+                            try {
+                                ResolvableApiException rae = (ResolvableApiException) e;
+                                rae.startResolutionForResult(RoutesActivity.this, REQUEST_CHECK_SETTINGS);
+                            } catch (IntentSender.SendIntentException sie) {
+                                Log.e("GPS","Unable to execute request.");
+                            }
+                            break;
+                        case LocationSettingsStatusCodes.SETTINGS_CHANGE_UNAVAILABLE:
+                            Log.e("GPS","Location settings are inadequate, and cannot be fixed here. Fix in Settings.");
+                    }
+                })
+                .addOnCanceledListener(() -> Log.e("GPS","checkLocationSettings -> onCanceled"));
 
         // get the intent with the bus route information
         Intent intent = getIntent();
@@ -62,12 +115,14 @@ public class RoutesActivity extends AppCompatActivity {
             }
         }
 
+        // set listView Header using TextView
         TextView textView = new TextView(RoutesActivity.this);
         textView.setClickable(true);
         textView.setText(R.string.header_text);
         textView.setAllCaps(true);
         textView.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         textView.setTextSize(24);
+        textView.setBackgroundColor(ContextCompat.getColor(RoutesActivity.this, R.color.colorSecondary));
         textView.setTextColor(ContextCompat.getColor(RoutesActivity.this, R.color.colorYellowAccent));
         routesListView.addHeaderView(textView);
 
@@ -84,5 +139,34 @@ public class RoutesActivity extends AppCompatActivity {
             mapIntent.putExtra("route", updatedRoutes.get(parent.getItemAtPosition(position).toString()));
             startActivity(mapIntent);
         });
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == REQUEST_CHECK_SETTINGS) {
+            switch (resultCode) {
+                case Activity.RESULT_OK:
+                    //Success Perform Task Here
+                    break;
+                case Activity.RESULT_CANCELED:
+                    Log.e("GPS","User denied to access location");
+                    openGpsEnableSetting();
+                    break;
+            }
+        } else if (requestCode == REQUEST_ENABLE_GPS) {
+            LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+            boolean isGpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+
+            if (!isGpsEnabled) {
+                openGpsEnableSetting();
+            }
+        }
+    }
+
+    private void openGpsEnableSetting() {
+        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        startActivityForResult(intent, REQUEST_ENABLE_GPS);
     }
 }

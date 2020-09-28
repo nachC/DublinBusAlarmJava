@@ -8,6 +8,7 @@ import androidx.fragment.app.FragmentActivity;
 import android.Manifest;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.KeyguardManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -16,8 +17,10 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.WindowManager;
 
 import com.example.dublinbusalarm.receivers.AlarmReceiver;
 import com.example.dublinbusalarm.services.LocationService;
@@ -58,7 +61,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private boolean stopReached = false; // flag for when the selected stop is reached
     private boolean stopSelected = false; // flag for when a stop is selected
 
-    private static final float triggerDistToStop = 50f; // distance in meters from stop where to trigger the alarm
+    private static final float TRIGGER_DISTANCE_TO_STOP = 50f; // distance in meters from stop where to trigger the alarm
+
+    private static final int ALARM_DELAY = 500; // time to delay the alarm (in milliseconds)
+    private static final int CAMERA_ZOOM = 12; // zoom in camera when Map starts
 
     private static final String NOTIFICATION_DISMISS = "dismiss";
 
@@ -78,6 +84,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         assert route != null;
         stops = route.getStops();
         currentMarker = null;
+
+        // inform the user on how to select a Stop
+        alertDialog = new AlertDialog.Builder(MapsActivity.this)
+                .setTitle("Select your Stop")
+                .setMessage("Tap the Stop where you want the alarm to ring. Once you're close to it, I will let you know!")
+                // A null listener allows the button to dismiss the dialog and take no further action.
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
 
         // this is here for debugging
         //startAlarm();
@@ -113,7 +127,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     // get and store the distance from the user to the stop selected
                     float distanceToStop = location.distanceTo(stopLocation);
                     //Log.d(TAG + " distanceToStop", valueOf(distanceToStop));
-                    if(distanceToStop < triggerDistToStop && !isStopReached()) {
+                    if(distanceToStop < TRIGGER_DISTANCE_TO_STOP && !isStopReached()) {
                         // we are 50 meters or less from the stop and we haven't reached the stop
                         Log.d(TAG, "reached stop -> firing alarm");
                         setStopReached(true);
@@ -175,7 +189,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             }
         }
         // set the camera position at launch to the first stop
-        CameraPosition cameraPosition = new CameraPosition.Builder().target(firstMarker).zoom(12).build();
+        CameraPosition cameraPosition = new CameraPosition.Builder().target(firstMarker).zoom(CAMERA_ZOOM).build();
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
         mMap.setOnMarkerClickListener(this);
     }
@@ -233,7 +247,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Intent alarmIntent = new Intent(MapsActivity.this, AlarmReceiver.class);
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), 0, alarmIntent, 0);
-        AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(System.currentTimeMillis()+500, pendingIntent);
+        AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(System.currentTimeMillis() + ALARM_DELAY, pendingIntent);
         alarmManager.setAlarmClock(alarmClockInfo, pendingIntent);
     }
 

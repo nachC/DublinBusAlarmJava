@@ -1,19 +1,25 @@
 package com.example.dublinbusalarm.receivers;
 
+import android.app.KeyguardManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
+import android.os.PowerManager;
 import android.util.Log;
+import android.view.Window;
+import android.view.WindowManager;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
 import com.example.dublinbusalarm.R;
 import com.example.dublinbusalarm.services.LocationService;
 import com.example.dublinbusalarm.services.RingtonePlayService;
 import com.example.dublinbusalarm.ui.MainActivity;
+import com.example.dublinbusalarm.ui.MapsActivity;
 
 import static android.app.Notification.EXTRA_NOTIFICATION_ID;
 import static android.provider.AlarmClock.ACTION_DISMISS_ALARM;
@@ -32,9 +38,25 @@ public class AlarmReceiver extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         Log.d("AlarmReceiver", "called");
+        /*
+        KeyguardManager myKM = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+        if( myKM.inKeyguardRestrictedInputMode()) {
+            //it is locked
+            Log.d(TAG, "screen is locked");
+            PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+            PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "alarm:wakelock");
+            wakeLock.acquire(500);
+            Log.d(TAG, "wakeLock acquired");
+            wakeLock.release();
+        } else {
+            //it is not locked
+            Log.d(TAG, "screen isn't locked");
+        }
+        */
+
         // Here we check if the alarm receiver was invoked to dismiss the ongoing alarm
         // or to set an alarm.
-        // First we check if the user clicked the DISMISS button on the notification
+        // First we check if the user clicked the DISMISS button (either on the notification or the alerDialog in MapsActivity)
         if (intent.hasExtra(EXTRA_NOTIFICATION_ID) && intent.getStringExtra(EXTRA_NOTIFICATION_ID).equals(NOTIFICATION_DISMISS)) {
             // user dismissed the alarm
             Log.d(TAG, "dismiss clicked in notification");
