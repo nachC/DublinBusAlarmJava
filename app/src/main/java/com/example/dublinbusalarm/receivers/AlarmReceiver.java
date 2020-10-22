@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat;
 import com.example.dublinbusalarm.R;
 import com.example.dublinbusalarm.services.LocationService;
 import com.example.dublinbusalarm.services.RingtonePlayService;
+import com.example.dublinbusalarm.ui.AlarmLockScreenActivity;
 import com.example.dublinbusalarm.ui.MainActivity;
 import com.example.dublinbusalarm.ui.MapsActivity;
 
@@ -37,23 +38,7 @@ public class AlarmReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        Log.d("AlarmReceiver", "called");
-        /*
-        KeyguardManager myKM = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
-        if( myKM.inKeyguardRestrictedInputMode()) {
-            //it is locked
-            Log.d(TAG, "screen is locked");
-            PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-            PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "alarm:wakelock");
-            wakeLock.acquire(500);
-            Log.d(TAG, "wakeLock acquired");
-            wakeLock.release();
-        } else {
-            //it is not locked
-            Log.d(TAG, "screen isn't locked");
-        }
-        */
-
+        Log.d(TAG, "called");
         // Here we check if the alarm receiver was invoked to dismiss the ongoing alarm
         // or to set an alarm.
         // First we check if the user clicked the DISMISS button (either on the notification or the alerDialog in MapsActivity)
@@ -79,11 +64,30 @@ public class AlarmReceiver extends BroadcastReceiver {
             context.startActivity(backToMainActivityIntent);
         } else {
             // user is setting an alarm
-            Log.d(TAG, "intent to initiate alarm");
+
+            Log.d(TAG, "initiate alarm");
             // start ringtone service
             Intent startRingtoneIntent = new Intent(context, RingtonePlayService.class);
             context.startService(startRingtoneIntent);
             createNotification(context);
+
+            // check if the screen is locked or not
+            KeyguardManager myKM = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+            if( myKM.inKeyguardRestrictedInputMode()) {
+                //it is locked
+                Log.d(TAG, "screen is locked");
+                PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "alarm:wakelock");
+                wakeLock.acquire(500);
+                Log.d(TAG, "wakeLock acquired");
+                Intent alarmLockScreen = new Intent(context, AlarmLockScreenActivity.class);
+                alarmLockScreen.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(alarmLockScreen);
+                wakeLock.release();
+            } else {
+                //it is not locked
+                Log.d(TAG, "screen isn't locked");
+            }
         }
     }
 

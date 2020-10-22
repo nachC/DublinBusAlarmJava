@@ -139,7 +139,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                                         .setTitle("Time to get out!")
                                         .setMessage("You're close to your destination.")
                                         // A null listener allows the button to dismiss the dialog and take no further action.
-                                        .setPositiveButton(NOTIFICATION_DISMISS, (dialog, which) -> {
+                                        .setPositiveButton("stop", (dialog, which) -> {
                                             Intent dismissIntent = new Intent(MapsActivity.this, AlarmReceiver.class);
                                             dismissIntent.setAction(ACTION_DISMISS_ALARM);
                                             dismissIntent.putExtra(EXTRA_NOTIFICATION_ID, NOTIFICATION_DISMISS);
