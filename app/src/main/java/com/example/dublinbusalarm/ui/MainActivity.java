@@ -25,9 +25,16 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.dublinbusalarm.api.FetchDBData;
 import com.example.dublinbusalarm.models.BusRoute;
 import com.example.dublinbusalarm.api.DublinBusApi;
 import com.example.dublinbusalarm.R;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Logger;
+import com.google.firebase.database.ValueEventListener;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -50,6 +57,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int FINE_LOCATION = 1; // helper flag for FINE LOCATION request code
     private static final String NOT_RESULTS_FOUND_CODE = "0"; // flag to check for "no results fund" when querying the Dublin Bus API
 
+    private DatabaseReference databaseRef;
+    private String routeid;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -60,6 +70,7 @@ public class MainActivity extends AppCompatActivity {
         searchBtn = findViewById(R.id.searchBtn);
         permissionBtn = findViewById(R.id.permissionBtn);
 
+        //fetcher = new FetchDBData();
         // create retrofit instance to handle the api calls using the BASE_URL and Gson Converter
         Retrofit retrofit = new Retrofit.Builder()
                 .baseUrl(BASE_URL)
@@ -69,6 +80,32 @@ public class MainActivity extends AppCompatActivity {
 
         createNotificationChannel();
         enableApp();
+
+        Log.i(TAG, "onCreate called");
+        databaseRef = FirebaseDatabase.getInstance().getReference();
+    }
+
+    public void testSearch(View view) {
+        Log.i(TAG, "search clicked");
+        routeid = "60-66B-d12-1";
+        //FirebaseDatabase.getInstance().setLogLevel(Logger.Level.DEBUG);
+        databaseRef.child("66b").addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                // This method is called once with the initial value and again
+                // whenever data at this location is updated.
+                //routeid = dataSnapshot.getValue(String.class);
+                for (DataSnapshot child : dataSnapshot.getChildren()) {
+                        Log.i(TAG, "Key: " + child.getKey());
+                    }
+                }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.w(TAG, "Failed to read value.", error.toException());
+            }
+        });
     }
 
     // this method enables the main functionality of the app
