@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 public class RoutesActivity extends AppCompatActivity {
+    /*
 
     BusRoute busRoute;
     ListView routesListView;
@@ -169,4 +170,6 @@ public class RoutesActivity extends AppCompatActivity {
         Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
         startActivityForResult(intent, REQUEST_ENABLE_GPS);
     }
+
+     */
 }
