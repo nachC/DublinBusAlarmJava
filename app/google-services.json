@@ -1,33 +1,33 @@
 {
   "project_info": {
-    "project_number": "877839023813",
-    "project_id": "dublinbusalarm",
-    "storage_bucket": "dublinbusalarm.appspot.com"
+    "project_number": "809012160623",
+    "project_id": "dublinbusalarm-905ed",
+    "storage_bucket": "dublinbusalarm-905ed.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:877839023813:android:b855c184fa5e4f3fc73aac",
+        "mobilesdk_app_id": "1:809012160623:android:e618b2b02448bb617b459a",
         "android_client_info": {
           "package_name": "com.example.dublinbusalarm"
         }
       },
       "oauth_client": [
         {
-          "client_id": "877839023813-kd3c4b9thvo7l2s0ukn7f1iild7b1puo.apps.googleusercontent.com",
+          "client_id": "809012160623-vmmq7uapvb6eqi59qk729s1ls0oibkhe.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyCBX_gIL4ckKzec6Sn2qXDWLcHzQkCkdLY"
+          "current_key": "AIzaSyA7k2pubXihYm6WyJRYXFxm11TmcZam9e8"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "877839023813-kd3c4b9thvo7l2s0ukn7f1iild7b1puo.apps.googleusercontent.com",
+              "client_id": "809012160623-vmmq7uapvb6eqi59qk729s1ls0oibkhe.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

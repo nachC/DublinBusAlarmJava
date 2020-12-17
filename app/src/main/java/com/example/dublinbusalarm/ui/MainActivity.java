@@ -5,11 +5,9 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
-import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -26,8 +24,15 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dublinbusalarm.models.BusRoute;
-import com.example.dublinbusalarm.api.DublinBusApi;
 import com.example.dublinbusalarm.R;
+import com.example.dublinbusalarm.models.Route;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.ArrayList;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -35,20 +40,27 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+import static java.lang.Double.parseDouble;
+import static java.lang.Float.parseFloat;
+
 public class MainActivity extends AppCompatActivity {
 
     EditText inputLineEditText;
     TextView permissionText;
     Button searchBtn, permissionBtn;
     ProgressBar progressBar;
-    DublinBusApi dublinBusApi;
 
-    private static final String TAG = "MainActivity";
-    private static final String BASE_URL = "https://data.smartdublin.ie/"; // base url for making API calls
-    private static final String OPERATOR = "bac"; // this specifies that we're requesting info about the "bus" service (and not "rail" service, for example)
+    private static final String TAG = "MainActivity"; // tag for logging
     private static final String CHANNEL_ID = "alarm_channel"; // identifier for the channel that handles the alarms
     private static final int FINE_LOCATION = 1; // helper flag for FINE LOCATION request code
-    private static final String NOT_RESULTS_FOUND_CODE = "0"; // flag to check for "no results fund" when querying the Dublin Bus API
+
+    private DatabaseReference databaseRef;
+
+    /** Variables to hold the route data coming from Firebase DB */
+    Route route;
+    Route.Trip trip;
+    ArrayList<ArrayList<String>> shape;
+    ArrayList<Route.Trip.Stop> stops;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,15 +72,69 @@ public class MainActivity extends AppCompatActivity {
         searchBtn = findViewById(R.id.searchBtn);
         permissionBtn = findViewById(R.id.permissionBtn);
 
-        // create retrofit instance to handle the api calls using the BASE_URL and Gson Converter
-        Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .build();
-        dublinBusApi = retrofit.create(DublinBusApi.class);
+        databaseRef = FirebaseDatabase.getInstance().getReference();
 
         createNotificationChannel();
         enableApp();
+    }
+
+    public void fetchData(String routeID) {
+        Log.d(TAG, "fetching data...");
+        route = new Route();
+        databaseRef.child(routeID).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                progressBar.setVisibility(View.INVISIBLE);
+                // if routeid is non-existent return
+                if (dataSnapshot.getValue() == null) {
+                    Log.d(TAG, "No results found");
+                    // here show user message (advice to double check bus line entered)
+                    Toast.makeText(MainActivity.this, "No results found. Please check bus line.", Toast.LENGTH_LONG).show();
+                    return;
+                }
+                new Thread ( new Runnable() {
+                    @Override
+                    public void run() {
+                        // This code will run in another thread. Usually as soon as start() gets called!
+                        // This method is called once with the initial value and again
+                        // whenever data at this location is updated.
+                        for (DataSnapshot tripData : dataSnapshot.getChildren()) {
+
+                            trip = new Route.Trip();
+                            shape = new ArrayList<>();
+                            stops = new ArrayList<>();
+
+                            for ( DataSnapshot shapeData : tripData.child("shape").getChildren()) {
+                                // shapeData is [lat, lng] for shape point
+                                shape.add((ArrayList<String>) shapeData.getValue());
+                            }
+                            //Double d = parseDouble(shape.get(0).get(0)) + parseDouble(shape.get(0).get(1));
+                            for ( DataSnapshot stopData: tripData.child("stopSequence").getChildren()) {
+                                stops.add(stopData.getValue(Route.Trip.Stop.class));
+                            }
+                            /** set all trip instance properties */
+                            trip.setDestination(tripData.child("destination").getValue().toString());
+                            trip.setOrigin(tripData.child("origin").getValue().toString());
+                            trip.setShapePoints(shape);
+                            trip.setStops(stops);
+                            route.setTrips(trip);
+                        }
+                        //Log.d(TAG, route.getTrips().size() + "");
+                        // create intent for RoutesActivity and add the object created above to access from RoutesActivity
+                        Intent intent = new Intent(getApplicationContext(), RoutesActivity.class);
+                        intent.putExtra("route", route);
+                        Log.d(TAG, route.getTrips().size() + "");
+                        startActivity(intent);
+                    }
+                }).start();
+            }
+
+            @Override
+            public void onCancelled(DatabaseError error) {
+                // Failed to read value
+                Log.w(TAG, "Failed to read value.", error.toException());
+            }
+        });
     }
 
     // this method enables the main functionality of the app
@@ -129,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // method handling the event of finding the bus line and firing the intent to show the routes in the RoutesActivity
-    public void searchLine(View view) {
+    public void search(View view) {
         // check if fine-location access is already available
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             // if it's available -> continue with normal app flow
@@ -145,51 +211,8 @@ public class MainActivity extends AppCompatActivity {
                     // Show progress bar
                     progressBar = findViewById(R.id.progressBar);
                     progressBar.setVisibility(View.VISIBLE);
-                    // Make API call
-                    Call<BusRoute> call = dublinBusApi.getBusRouteList(userInput, OPERATOR);
-                    call.enqueue(new Callback<BusRoute>() {
-                        @Override
-                        public void onResponse(Call<BusRoute> call, Response<BusRoute> response) {
-                            progressBar.setVisibility(View.INVISIBLE);
-                            assert response.body() != null;
-                            if (!response.body().getErrorCode().equals(NOT_RESULTS_FOUND_CODE)) {
-                                Log.e(TAG, "No results found");
-                                // here show user message (advice to double check bus line entered)
-                                Toast.makeText(MainActivity.this, "No results found. Please check bus line.", Toast.LENGTH_LONG).show();
-
-                                /*
-                                //use this to let the user know about the possible power management issue with the alarm
-                                new AlertDialog.Builder(MainActivity.this)
-                                        .setTitle("Tip")
-                                        .setMessage("Some devices...")
-                                        // A null listener allows the button to dismiss the dialog and take no further action.
-                                        .setNegativeButton(android.R.string.ok, null)
-                                        .show();
-
-                                 */
-
-                            } else {
-                                // on a successful response set the necessary fields in a new instance of BusRoute
-                                BusRoute busRoute = new BusRoute();
-                                busRoute.setErrorCode(response.body().getErrorCode());
-                                busRoute.setRouteName(response.body().getRouteName());
-                                busRoute.setRoutes(response.body().getRoutes());
-
-                                // create intent for RoutesActivity and add the object created above to access from RoutesActivity
-                                Intent intent = new Intent(getApplicationContext(), RoutesActivity.class);
-                                intent.putExtra("busRoute", busRoute);
-                                startActivity(intent);
-                            }
-                        }
-
-                        @Override
-                        public void onFailure(Call<BusRoute> call, Throwable t) {
-                            progressBar.setVisibility(View.INVISIBLE);
-                            Log.e(TAG, "onFailure something went wrong: " + t.getMessage());
-                            // show user error message (advice user to check internet connection)
-                            Toast.makeText(MainActivity.this, "Oops... please, check your internet connection.", Toast.LENGTH_LONG).show();
-                        }
-                    });
+                    // fetch route data from db
+                    fetchData(userInput);
                 } else {
                     Toast.makeText(MainActivity.this, "Please, use only letters and numbers", Toast.LENGTH_LONG).show();
                 }

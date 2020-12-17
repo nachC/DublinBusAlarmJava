@@ -82,7 +82,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Intent intent = getIntent();
         route = intent.getParcelableExtra("route");
         assert route != null;
-        stops = route.getStops();
+        //stops = route.getStops();
         currentMarker = null;
 
         // inform the user on how to select a Stop
