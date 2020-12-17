@@ -50,13 +50,17 @@ public class MainActivity extends AppCompatActivity {
     Button searchBtn, permissionBtn;
     ProgressBar progressBar;
 
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "MainActivity"; // tag for logging
     private static final String CHANNEL_ID = "alarm_channel"; // identifier for the channel that handles the alarms
     private static final int FINE_LOCATION = 1; // helper flag for FINE LOCATION request code
-    private static final String NOT_RESULTS_FOUND_CODE = "0"; // flag to check for "no results fund" when querying the Dublin Bus API
 
     private DatabaseReference databaseRef;
-    private String routeid;
+
+    /** Variables to hold the route data coming from Firebase DB */
+    Route route;
+    Route.Trip trip;
+    ArrayList<ArrayList<String>> shape;
+    ArrayList<Route.Trip.Stop> stops;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,45 +72,61 @@ public class MainActivity extends AppCompatActivity {
         searchBtn = findViewById(R.id.searchBtn);
         permissionBtn = findViewById(R.id.permissionBtn);
 
+        databaseRef = FirebaseDatabase.getInstance().getReference();
+
         createNotificationChannel();
         enableApp();
-
-        Log.i(TAG, "onCreate called");
-        databaseRef = FirebaseDatabase.getInstance().getReference();
     }
 
-    public void testSearch(View view) {
-        Log.i(TAG, "search clicked");
-        routeid = "1";
-        Route route = new Route();
-        //Route.Trip.Stop stop = trip.new Stop();
-        //FirebaseDatabase.getInstance().setLogLevel(Logger.Level.DEBUG);
-        databaseRef.child(routeid).addValueEventListener(new ValueEventListener() {
+    public void fetchData(String routeID) {
+        Log.d(TAG, "fetching data...");
+        route = new Route();
+        databaseRef.child(routeID).addValueEventListener(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                // This method is called once with the initial value and again
-                // whenever data at this location is updated.
-                for (DataSnapshot tripData : dataSnapshot.getChildren()) {
-                    Route.Trip trip = new Route.Trip();
-                    Route.Trip.Stop stop = new Route.Trip.Stop();
-                    ArrayList<ArrayList<String>> shape = new ArrayList<>();
-                    ArrayList<Route.Trip.Stop> stops = new ArrayList<>();
-                    trip.setDestination(tripData.child("destination").getValue().toString());
-                    trip.setOrigin(tripData.child("origin").getValue().toString());
-                    //route.addTrip(trip);
-                    for ( DataSnapshot shapeData : tripData.child("shape").getChildren()) {
-                        // shapeData is [lat, lng] for shape point
-                        shape.add((ArrayList<String>) shapeData.getValue());
-                    }
-                    trip.setShapePoints(shape);
-                    //Double d = parseDouble(shape.get(0).get(0)) + parseDouble(shape.get(0).get(1));
-                    for ( DataSnapshot stopData: tripData.child("stopSequence").getChildren()) {
-                        stops.add(stopData.getValue(Route.Trip.Stop.class));
-                    }
-                    trip.setStops(stops);
-                    route.setTrips(trip);
+                progressBar.setVisibility(View.INVISIBLE);
+                // if routeid is non-existent return
+                if (dataSnapshot.getValue() == null) {
+                    Log.d(TAG, "No results found");
+                    // here show user message (advice to double check bus line entered)
+                    Toast.makeText(MainActivity.this, "No results found. Please check bus line.", Toast.LENGTH_LONG).show();
+                    return;
                 }
-                Log.i(TAG, "" + route.getTrips().size());
+                new Thread ( new Runnable() {
+                    @Override
+                    public void run() {
+                        // This code will run in another thread. Usually as soon as start() gets called!
+                        // This method is called once with the initial value and again
+                        // whenever data at this location is updated.
+                        for (DataSnapshot tripData : dataSnapshot.getChildren()) {
+
+                            trip = new Route.Trip();
+                            shape = new ArrayList<>();
+                            stops = new ArrayList<>();
+
+                            for ( DataSnapshot shapeData : tripData.child("shape").getChildren()) {
+                                // shapeData is [lat, lng] for shape point
+                                shape.add((ArrayList<String>) shapeData.getValue());
+                            }
+                            //Double d = parseDouble(shape.get(0).get(0)) + parseDouble(shape.get(0).get(1));
+                            for ( DataSnapshot stopData: tripData.child("stopSequence").getChildren()) {
+                                stops.add(stopData.getValue(Route.Trip.Stop.class));
+                            }
+                            /** set all trip instance properties */
+                            trip.setDestination(tripData.child("destination").getValue().toString());
+                            trip.setOrigin(tripData.child("origin").getValue().toString());
+                            trip.setShapePoints(shape);
+                            trip.setStops(stops);
+                            route.setTrips(trip);
+                        }
+                        //Log.d(TAG, route.getTrips().size() + "");
+                        // create intent for RoutesActivity and add the object created above to access from RoutesActivity
+                        Intent intent = new Intent(getApplicationContext(), RoutesActivity.class);
+                        intent.putExtra("route", route);
+                        Log.d(TAG, route.getTrips().size() + "");
+                        startActivity(intent);
+                    }
+                }).start();
             }
 
             @Override
@@ -175,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     // method handling the event of finding the bus line and firing the intent to show the routes in the RoutesActivity
-    public void searchLine(View view) {
+    public void search(View view) {
         // check if fine-location access is already available
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             // if it's available -> continue with normal app flow
@@ -192,6 +212,7 @@ public class MainActivity extends AppCompatActivity {
                     progressBar = findViewById(R.id.progressBar);
                     progressBar.setVisibility(View.VISIBLE);
                     // fetch route data from db
+                    fetchData(userInput);
                 } else {
                     Toast.makeText(MainActivity.this, "Please, use only letters and numbers", Toast.LENGTH_LONG).show();
                 }

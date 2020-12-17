@@ -1,27 +1,21 @@
 package com.example.dublinbusalarm.models;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
-
-import java.lang.reflect.Array;
+import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
 
-public class Route /*implements Parcelable*/ {
+public class Route implements Serializable {
 
     ArrayList<Trip> trips = new ArrayList<>();
-    public static class Trip {
+
+    public static class Trip implements Serializable{
+
         String origin;
         String destination;
         ArrayList<ArrayList<String>> shapePoints = new ArrayList<>();
         ArrayList<Stop> stops = new ArrayList<>();
 
-        public static class Stop {
+        public static class Stop implements Serializable {
+
             String name;
             ArrayList<String> latlng = new ArrayList<>();
 
@@ -82,8 +76,5 @@ public class Route /*implements Parcelable*/ {
         this.trips = trips;
     }
     public void setTrips(Trip trip) { this.trips.add(trip); }
-    public void addTrip(Trip t) {
-        trips.add(t);
-    }
 }
 

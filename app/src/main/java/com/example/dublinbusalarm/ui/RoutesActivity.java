@@ -41,12 +41,12 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 public class RoutesActivity extends AppCompatActivity {
-    /*
 
-    BusRoute busRoute;
+    Route route;
     ListView routesListView;
     List<Route> routes;
 
+    private static final String TAG = "RoutesActivity";
     private SettingsClient settingsClient;
     private LocationSettingsRequest locationSettingsRequest;
     private static final int REQUEST_CHECK_SETTINGS = 214;
@@ -91,7 +91,9 @@ public class RoutesActivity extends AppCompatActivity {
 
         // get the intent with the bus route information
         Intent intent = getIntent();
-        busRoute = intent.getParcelableExtra("busRoute");
+        route = (Route) intent.getSerializableExtra("route");
+
+        /*
 
         // populate the routes object with the routes for this bus route
         assert busRoute != null;
@@ -99,6 +101,9 @@ public class RoutesActivity extends AppCompatActivity {
 
         // we'll use this predicate to filter the routes to get only the latest ones
         Predicate<Route> byDateUpdated = route -> route.getLastUpdated().matches("(.*)2020(.*)");
+
+        */
+
 
         // hashmap to use on the click listener:
         // key: (String) route origin -> destination
@@ -109,12 +114,14 @@ public class RoutesActivity extends AppCompatActivity {
         // contains the route's "origin -> destination" string
         ArrayList<String> originToDestination = new ArrayList<>();
 
-        for (Route route : routes) {
-            if (byDateUpdated.test(route)) {
-                updatedRoutes.put(route.getOrigin() + " to " + route.getDestination(), route);
-                originToDestination.add(route.getOrigin() + " to " + route.getDestination());
-            }
+        for (Route.Trip trip : route.getTrips()) {
+            //updatedRoutes.put(trip.getOrigin() + " to " + trip.getDestination(), route);
+            originToDestination.add(trip.getOrigin() + " to " + trip.getDestination());
         }
+
+        Log.d(TAG, originToDestination.toString());
+
+        /*
 
         // set listView Header using TextView
         TextView textView = new TextView(RoutesActivity.this);
@@ -140,8 +147,9 @@ public class RoutesActivity extends AppCompatActivity {
             mapIntent.putExtra("route", updatedRoutes.get(parent.getItemAtPosition(position).toString()));
             startActivity(mapIntent);
         });
+        */
     }
-
+    /*
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
