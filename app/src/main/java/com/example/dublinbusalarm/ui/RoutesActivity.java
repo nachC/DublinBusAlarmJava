@@ -1,6 +1,5 @@
 package com.example.dublinbusalarm.ui;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
@@ -14,12 +13,10 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
-import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.example.dublinbusalarm.models.BusRoute;
 import com.example.dublinbusalarm.R;
 import com.example.dublinbusalarm.models.Route;
 import com.google.android.gms.common.api.ApiException;
@@ -27,28 +24,19 @@ import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationSettingsRequest;
-import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.location.SettingsClient;
-import com.google.android.gms.tasks.OnCanceledListener;
-import com.google.android.gms.tasks.OnFailureListener;
-import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 
 public class RoutesActivity extends AppCompatActivity {
 
     Route route;
     ListView routesListView;
-    List<Route> routes;
 
     private static final String TAG = "RoutesActivity";
-    private SettingsClient settingsClient;
-    private LocationSettingsRequest locationSettingsRequest;
     private static final int REQUEST_CHECK_SETTINGS = 214;
     private static final int REQUEST_ENABLE_GPS = 516;
 
@@ -58,6 +46,9 @@ public class RoutesActivity extends AppCompatActivity {
         setContentView(R.layout.activity_routes);
 
         routesListView = findViewById(R.id.routesListView);
+
+        final SettingsClient settingsClient;
+        final LocationSettingsRequest locationSettingsRequest;
 
         // check if user has location enabled
         // if not, show dialog to turn on location or send to settings
@@ -93,35 +84,27 @@ public class RoutesActivity extends AppCompatActivity {
         Intent intent = getIntent();
         route = (Route) intent.getSerializableExtra("route");
 
-        /*
-
-        // populate the routes object with the routes for this bus route
-        assert busRoute != null;
-        routes = busRoute.getRoutes();
-
-        // we'll use this predicate to filter the routes to get only the latest ones
-        Predicate<Route> byDateUpdated = route -> route.getLastUpdated().matches("(.*)2020(.*)");
-
-        */
-
-
-        // hashmap to use on the click listener:
-        // key: (String) route origin -> destination
-        // value: (Route) route
-        Map<String, Route> updatedRoutes = new HashMap<>();
+        // HashMap to use on the click listener:
+        // key: (String) origin to destination
+        // value: (Route.Trip) trip
+        Map<String, Route.Trip> availableTrips = new HashMap<>();
 
         // array list necessary for displaying the list view
-        // contains the route's "origin -> destination" string
+        // contains the trip's "origin to destination" string
         ArrayList<String> originToDestination = new ArrayList<>();
 
+        // as I'm not allowed to have duplicate keys (not allowed in hashmap)
+        // "i" will be appended to the key string to not have duplicate keys ("i" will increase per trip)
+        int i = 1;
+
+        // populate both availableTrips and originToDestination
+        // elements in originToDestination are the same as the keys for availableTrips
         for (Route.Trip trip : route.getTrips()) {
-            //updatedRoutes.put(trip.getOrigin() + " to " + trip.getDestination(), route);
-            originToDestination.add(trip.getOrigin() + " to " + trip.getDestination());
+            String key = trip.getOrigin() + " to " + trip.getDestination();
+            key = availableTrips.containsKey(key) ? key + " " + i++ : key;
+            availableTrips.put(key, trip);
+            originToDestination.add(key);
         }
-
-        Log.d(TAG, originToDestination.toString());
-
-        /*
 
         // set listView Header using TextView
         TextView textView = new TextView(RoutesActivity.this);
@@ -134,7 +117,7 @@ public class RoutesActivity extends AppCompatActivity {
         textView.setTextColor(ContextCompat.getColor(RoutesActivity.this, R.color.colorYellowAccent));
         routesListView.addHeaderView(textView);
 
-        // display the list view with the routes
+        // display the list view with the trips
         final ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>
                 (this, android.R.layout.simple_list_item_1, originToDestination);
         routesListView.setAdapter(arrayAdapter);
@@ -144,12 +127,18 @@ public class RoutesActivity extends AppCompatActivity {
         routesListView.setOnItemClickListener((parent, view, position, id) -> {
             // start Google Maps Activity
             Intent mapIntent = new Intent(getApplicationContext(), MapsActivity.class);
-            mapIntent.putExtra("route", updatedRoutes.get(parent.getItemAtPosition(position).toString()));
+            mapIntent.putExtra("trip", availableTrips.get(parent.getItemAtPosition(position).toString()));
             startActivity(mapIntent);
         });
-        */
     }
-    /*
+
+    // handles the action of opening the Settings view to turn on Gps
+    private void openGpsEnableSetting() {
+        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+        startActivityForResult(intent, REQUEST_ENABLE_GPS);
+    }
+
+    // handles the result of opening Settings
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -173,11 +162,4 @@ public class RoutesActivity extends AppCompatActivity {
             }
         }
     }
-
-    private void openGpsEnableSetting() {
-        Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
-        startActivityForResult(intent, REQUEST_ENABLE_GPS);
-    }
-
-     */
 }
