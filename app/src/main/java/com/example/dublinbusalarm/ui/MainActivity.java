@@ -85,10 +85,10 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 progressBar.setVisibility(View.INVISIBLE);
-                // if routeid is non-existent return
+                // if routeid is non-existent, return
                 if (dataSnapshot.getValue() == null) {
                     Log.d(TAG, "No results found");
-                    // here show user message (advice to double check bus line entered)
+                    // alert user message (advise to double check bus line entered)
                     Toast.makeText(MainActivity.this, "No results found. Please check bus line.", Toast.LENGTH_LONG).show();
                     return;
                 }
