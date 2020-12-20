@@ -3,6 +3,8 @@ package com.example.dublinbusalarm.models;
 import java.io.Serializable;
 import java.util.ArrayList;
 
+import static java.lang.Double.parseDouble;
+
 public class Route implements Serializable {
 
     ArrayList<Trip> trips = new ArrayList<>();
@@ -33,6 +35,14 @@ public class Route implements Serializable {
                 return latlng;
             }
 
+            public double getLat() {
+                return parseDouble(this.getLatlng().get(0));
+            }
+
+            public double getLng() {
+                return parseDouble(this.getLatlng().get(1));
+            }
+
         }
 
         public String getOrigin() {
@@ -53,6 +63,14 @@ public class Route implements Serializable {
 
         public ArrayList<ArrayList<String>> getShapePoints() {
             return shapePoints;
+        }
+
+        public double getShapePtLat(int point) {
+            return parseDouble(this.shapePoints.get(point).get(0));
+        }
+
+        public double getShapePtLng(int point) {
+            return parseDouble(this.shapePoints.get(point).get(1));
         }
 
         public void setShapePoints(ArrayList<ArrayList<String>> shapePoints) {

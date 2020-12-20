@@ -23,7 +23,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.dublinbusalarm.models.BusRoute;
 import com.example.dublinbusalarm.R;
 import com.example.dublinbusalarm.models.Route;
 import com.google.firebase.database.DataSnapshot;
@@ -33,15 +32,6 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.ArrayList;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
-import retrofit2.Retrofit;
-import retrofit2.converter.gson.GsonConverterFactory;
-
-import static java.lang.Double.parseDouble;
-import static java.lang.Float.parseFloat;
 
 public class MainActivity extends AppCompatActivity {
 

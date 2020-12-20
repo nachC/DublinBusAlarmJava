@@ -8,25 +8,20 @@ import androidx.fragment.app.FragmentActivity;
 import android.Manifest;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
-import android.app.KeyguardManager;
 import android.app.PendingIntent;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.view.WindowManager;
 
 import com.example.dublinbusalarm.receivers.AlarmReceiver;
 import com.example.dublinbusalarm.services.LocationService;
 import com.example.dublinbusalarm.R;
 import com.example.dublinbusalarm.models.Route;
-import com.example.dublinbusalarm.models.Stop;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -38,7 +33,7 @@ import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 
-import java.util.List;
+import java.util.ArrayList;
 
 import static android.app.Notification.EXTRA_NOTIFICATION_ID;
 import static android.provider.AlarmClock.ACTION_DISMISS_ALARM;
@@ -55,8 +50,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private Marker currentMarker;
     private AlertDialog alertDialog;
 
-    private Route route; // object will contain bus route info
-    private List<Stop> stops; // object will contain stops info for the selected Route
+    private Route.Trip trip;
+    private ArrayList<Route.Trip.Stop> stops;
 
     private boolean stopReached = false; // flag for when the selected stop is reached
     private boolean stopSelected = false; // flag for when a stop is selected
@@ -75,14 +70,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
-        assert mapFragment != null;
         mapFragment.getMapAsync(this);
 
         // get the intent info from the activity we come from (RoutesActivity)
         Intent intent = getIntent();
-        route = intent.getParcelableExtra("route");
-        assert route != null;
-        //stops = route.getStops();
+        trip = (Route.Trip) intent.getSerializableExtra("trip");
+        stops = trip.getStops();
         currentMarker = null;
 
         // inform the user on how to select a Stop
@@ -182,12 +175,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     .position(new LatLng(stops.get(i).getLat(), stops.get(i).getLng()))
                     .title(getResources().getString(R.string.mapMarkerInfoViewTitle))
                     .snippet(stops.get(i).getName()));
-            if (i != stops.size()-1) {
-                googleMap.addPolyline(new PolylineOptions()
-                    .add(new LatLng(stops.get(i).getLat(), stops.get(i).getLng()))
-                    .add(new LatLng(stops.get(i+1).getLat(), stops.get(i+1).getLng())));
-            }
         }
+        // draw the shape of the route using Polylines
+        for (int i=0; i<trip.getShapePoints().size()-1; i++) {
+            googleMap.addPolyline(new PolylineOptions()
+                    .add(new LatLng(trip.getShapePtLat(i), trip.getShapePtLng(i)))
+                    .add(new LatLng(trip.getShapePtLat(i+1), trip.getShapePtLng(i+1))));
+        }
+
         // set the camera position at launch to the first stop
         CameraPosition cameraPosition = new CameraPosition.Builder().target(firstMarker).zoom(CAMERA_ZOOM).build();
         mMap.animateCamera(CameraUpdateFactory.newCameraPosition(cameraPosition));
