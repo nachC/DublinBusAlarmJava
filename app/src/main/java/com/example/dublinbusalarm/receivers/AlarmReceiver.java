@@ -74,7 +74,7 @@ public class AlarmReceiver extends BroadcastReceiver {
             // check if the screen is locked or not
             KeyguardManager myKM = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
             if( myKM.inKeyguardRestrictedInputMode()) {
-                //it is locked
+                // it's locked
                 Log.d(TAG, "screen is locked");
                 PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
                 PowerManager.WakeLock wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "alarm:wakelock");
