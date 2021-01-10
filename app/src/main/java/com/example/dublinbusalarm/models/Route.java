@@ -4,22 +4,35 @@ import java.io.Serializable;
 import java.util.ArrayList;
 
 import static java.lang.Double.parseDouble;
-
+/**
+ * A Route is identified by a route name or id (e.g. 66b)
+ * Each route will do different Trips.
+ * Each Trip has an Origin and a Destination,
+ * a sequence of Stops that the bus follows,
+ * a sequence of coordinates called a Shape, used to draw a 'pretty' trajectory on the map.
+ * Each Stop has a name and a set of coordinates (lat, lng).
+ * */
 public class Route implements Serializable {
 
-    ArrayList<Trip> trips = new ArrayList<>();
+    private ArrayList<Trip> trips = new ArrayList<>();
 
     public static class Trip implements Serializable{
 
-        String origin;
-        String destination;
-        ArrayList<ArrayList<String>> shapePoints = new ArrayList<>();
-        ArrayList<Stop> stops = new ArrayList<>();
+        // name of the origin for a trip (e.g. name of a street or square)
+        private String origin;
+        // name of the destination for a trip (e.g. name of a street or square)
+        private String destination;
+        // all the coordinate pairs for a trip's path
+        // this is for drawing the path in a more aesthetically pleasing way (as per GTFS spec)
+        private ArrayList<ArrayList<String>> shapePoints = new ArrayList<>();
+        // consider making this a LinkedList? stops for a route
+        // come in a particular order (sequence of stops)
+        private ArrayList<Stop> stops = new ArrayList<>();
 
         public static class Stop implements Serializable {
 
-            String name;
-            ArrayList<String> latlng = new ArrayList<>();
+            private String name;
+            private ArrayList<String> latlng = new ArrayList<>();
 
             public Stop() {}
 
