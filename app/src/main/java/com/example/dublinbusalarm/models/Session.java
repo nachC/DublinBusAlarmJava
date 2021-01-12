@@ -8,7 +8,7 @@ import java.util.ArrayList;
  * In particular, we'll store:
  * - user's location coordinates (lat, lng) when a stop is selected on the map
  * - selected stop's coordinates (lat, lng)
- * - time if took for the bus to reach the selected stop (since the stop was selected until it was reached)
+ * - time it took for the bus to reach the selected stop (since the stop was selected until it was reached)
  * - the date the trip was made
  */
 public class Session {
