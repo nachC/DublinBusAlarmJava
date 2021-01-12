@@ -18,10 +18,13 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.example.dublinbusalarm.models.Session;
 import com.example.dublinbusalarm.receivers.AlarmReceiver;
 import com.example.dublinbusalarm.services.LocationService;
 import com.example.dublinbusalarm.R;
 import com.example.dublinbusalarm.models.Route;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
@@ -32,8 +35,12 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 import static android.app.Notification.EXTRA_NOTIFICATION_ID;
 import static android.provider.AlarmClock.ACTION_DISMISS_ALARM;
@@ -42,26 +49,35 @@ import static java.lang.String.valueOf;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, GoogleMap.OnMarkerClickListener, GoogleMap.OnMyLocationButtonClickListener,
         GoogleMap.OnMyLocationClickListener {
 
-    private static final String TAG = "MapsActivity";
     private GoogleMap mMap;
     private LocationManager locationManager;
     private LocationListener locationListener;
     private Location stopLocation;
     private Marker currentMarker;
     private AlertDialog alertDialog;
+    private FusedLocationProviderClient fusedLocationClient; // used to get the user's location for sessionUserOriginCoords
 
-    private Route.Trip trip;
-    private ArrayList<Route.Trip.Stop> stops;
+    private Route.Trip trip; // holds an instance of a trip for a given route
+    private ArrayList<Route.Trip.Stop> stops; // holds the stop sequences for a trip of a given route
 
     private boolean stopReached = false; // flag for when the selected stop is reached
     private boolean stopSelected = false; // flag for when a stop is selected
 
+    private static final String TAG = "MapsActivity"; // TAG for log purposes
+    private static final String NOTIFICATION_DISMISS = "dismiss"; // const to notify that we want to dismiss a notification
     private static final float TRIGGER_DISTANCE_TO_STOP = 50f; // distance in meters from stop where to trigger the alarm
-
     private static final int ALARM_DELAY = 500; // time to delay the alarm (in milliseconds)
     private static final int CAMERA_ZOOM = 12; // zoom in camera when Map starts
 
-    private static final String NOTIFICATION_DISMISS = "dismiss";
+    // session variables to write to DB
+    private final ArrayList<Double> sessionUserOriginCoords = new ArrayList<>();
+    private final ArrayList<Double> sessionSelectedStopCoords = new ArrayList<>();
+    private long sessionDate; // (epoch time) moment when the user reaches the selected stop
+    private long sessionTimeTakenToStop; // time in seconds between stop selected and stop reached
+
+    private long startTripDate; // (epoch time) holds the exact moment in time when the user selects a stop (used to calculate sessionTimeTakenToStop)
+
+    DatabaseReference databaseRef; // database reference for writing session data to DB
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +94,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         stops = trip.getStops();
         currentMarker = null;
 
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
+
         // inform the user on how to select a Stop
         alertDialog = new AlertDialog.Builder(MapsActivity.this)
                 .setTitle("Select your Stop")
@@ -86,10 +104,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .setPositiveButton(android.R.string.ok, null)
                 .show();
 
+        // get a reference to the database
+        databaseRef = FirebaseDatabase.getInstance().getReference();
+
         // this is here for debugging
         //startAlarm();
     }
-
 
     /**
      * Manipulates the map once available.
@@ -123,8 +143,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                     if(distanceToStop < TRIGGER_DISTANCE_TO_STOP && !isStopReached()) {
                         // we are 50 meters or less from the stop and we haven't reached the stop
                         Log.d(TAG, "reached stop -> firing alarm");
+                        // set the sessionDate variable
+                        sessionDate = new Date().getTime();
+                        sessionTimeTakenToStop = (sessionDate - startTripDate)/1000;
                         setStopReached(true);
                         setStopSelected(false);
+
+                        // writing session data to DB
+                        DatabaseReference sessionRef = databaseRef.child("sessions");
+                        DatabaseReference newSessionRef = sessionRef.push();
+                        newSessionRef.setValue(new Session(sessionUserOriginCoords,
+                                sessionSelectedStopCoords,
+                                sessionTimeTakenToStop,
+                                sessionDate));
+
+                        // trigger alarm
                         startAlarm();
 
                         //alert dialog to allow the user to stop the alarm from the maps activity
@@ -217,9 +250,34 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         // set the coordinates of the Location object using the marker's location
         stopLocation.setLatitude(currentMarker.getPosition().latitude);
         stopLocation.setLongitude(currentMarker.getPosition().longitude);
-
+        //change color of selected marker
         currentMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_BLUE));
-
+        // clear arraylist in case the user selected differents stop before
+        // there should only be two elements on these arraylists (lat, lng)
+        sessionSelectedStopCoords.clear();
+        sessionUserOriginCoords.clear();
+        // set sessionSelectedStopCoords
+        sessionSelectedStopCoords.add(currentMarker.getPosition().latitude);
+        sessionSelectedStopCoords.add(currentMarker.getPosition().longitude);
+        // check for permission before setting sessionUserOriginCoords
+        // it's necessary to access user's last known location (location at the time of clicking the marker to select a stop)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION},1);
+        } else {
+            fusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(this, new OnSuccessListener<Location>() {
+                        @Override
+                        public void onSuccess(Location location) {
+                            // Got last known location. In some rare situations this can be null.
+                            if (location != null) {
+                                // Logic to handle location object
+                                sessionUserOriginCoords.add(location.getLatitude());
+                                sessionUserOriginCoords.add(location.getLongitude());
+                            }
+                        }
+                    });
+        }
+        startTripDate = new Date().getTime();
         setStopSelected(true);
         startLocationService();
         return false;
