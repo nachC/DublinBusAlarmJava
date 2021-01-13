@@ -18,6 +18,7 @@ import android.location.LocationManager;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.example.dublinbusalarm.firebase.FirebaseCall;
 import com.example.dublinbusalarm.models.Session;
 import com.example.dublinbusalarm.receivers.AlarmReceiver;
 import com.example.dublinbusalarm.services.LocationService;
@@ -78,6 +79,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private long startTripDate; // (epoch time) holds the exact moment in time when the user selects a stop (used to calculate sessionTimeTakenToStop)
 
     DatabaseReference databaseRef; // database reference for writing session data to DB
+    FirebaseCall firebaseCall;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -106,6 +108,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
         // get a reference to the database
         databaseRef = FirebaseDatabase.getInstance().getReference();
+        firebaseCall = new FirebaseCall();
 
         // this is here for debugging
         //startAlarm();
@@ -149,13 +152,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                         setStopReached(true);
                         setStopSelected(false);
 
-                        // writing session data to DB
-                        DatabaseReference sessionRef = databaseRef.child("sessions");
-                        DatabaseReference newSessionRef = sessionRef.push();
-                        newSessionRef.setValue(new Session(sessionUserOriginCoords,
+                        // save session data to DB
+                        Session sessionData = new Session(sessionUserOriginCoords,
                                 sessionSelectedStopCoords,
                                 sessionTimeTakenToStop,
-                                sessionDate));
+                                sessionDate);
+                        firebaseCall.saveSessionData(databaseRef, sessionData);
 
                         // trigger alarm
                         startAlarm();

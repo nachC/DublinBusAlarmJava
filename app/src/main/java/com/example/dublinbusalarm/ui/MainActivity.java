@@ -24,6 +24,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.dublinbusalarm.R;
+import com.example.dublinbusalarm.firebase.FirebaseCall;
 import com.example.dublinbusalarm.models.Route;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -50,7 +51,10 @@ public class MainActivity extends AppCompatActivity {
     private static final String CHANNEL_ID = "alarm_channel"; // identifier for the channel that handles the alarms
     private static final int FINE_LOCATION = 1; // helper flag for FINE LOCATION request code
 
+    // Reference to Firebase Database. Used to get and write data.
     private DatabaseReference databaseRef;
+    // Helper class to make calls to save and write data to Firebase DB
+    private FirebaseCall firebaseCall;
 
     // Variables to hold the route data coming from Firebase DB
     Route route;
@@ -70,76 +74,36 @@ public class MainActivity extends AppCompatActivity {
 
         // get a reference to the database
         databaseRef = FirebaseDatabase.getInstance().getReference();
+        // instantiation of FirebaseCall class to make calls
+        firebaseCall = new FirebaseCall();
 
         createNotificationChannel();
         enableApp();
     }
 
-    // method to fetch necessary route data from DB give a route id (user input)
-    public void fetchData(String routeID) {
-        /* used to delete sessions data in database
-        databaseRef.child("sessions").addValueEventListener(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                for (DataSnapshot dataSnapshot : snapshot.getChildren()) {
-                    dataSnapshot.getRef().removeValue();
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError error) {
-
-            }
-        });
-        */
-        Log.d(TAG, "fetching data...");
-        route = new Route();
-        databaseRef.child("routes").child(routeID).addValueEventListener(new ValueEventListener() {
+    // method to fetch necessary route data from DB given a route id (user input)
+    public void fetchData(String routeid) {
+        databaseRef.child("routes").child(routeid).addListenerForSingleValueEvent( new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
                 progressBar.setVisibility(View.INVISIBLE);
-                // if routeid is non-existent, return
-                if (dataSnapshot.getValue() == null) {
-                    // Log.d(TAG, "No results found");
-                    // alert user message (advise to double check bus line entered)
+                // get route data from db
+                route = firebaseCall.getRouteData(dataSnapshot);
+                // if route is null ->_ routeid is non-existent, return
+                if (route == null) {
                     Toast.makeText(MainActivity.this, "No results found. Please check bus line.", Toast.LENGTH_LONG).show();
                     return;
                 }
-                new Thread ( () -> {
-                        // This code will run in another thread. Usually as soon as start() gets called!
-                        // This method is called once with the initial value and again
-                        // whenever data at this location is updated.
-                        for (DataSnapshot tripData : dataSnapshot.getChildren()) {
-                            trip = new Route.Trip();
-                            shape = new ArrayList<>();
-                            stops = new ArrayList<>();
-
-                            for ( DataSnapshot shapeData : tripData.child("shape").getChildren()) {
-                                // shapeData is [lat, lng] for shape point
-                                shape.add((ArrayList<String>) shapeData.getValue());
-                            }
-                            for ( DataSnapshot stopData: tripData.child("stopSequence").getChildren()) {
-                                stops.add(stopData.getValue(Route.Trip.Stop.class));
-                            }
-                            // set all trip instance properties
-                            trip.setDestination(tripData.child("destination").getValue().toString());
-                            trip.setOrigin(tripData.child("origin").getValue().toString());
-                            trip.setShapePoints(shape);
-                            trip.setStops(stops);
-                            // set the trip for this route
-                            route.setTrips(trip);
-                        }
-                        // create intent for RoutesActivity and add the object created above to access from RoutesActivity
-                        Intent intent = new Intent(getApplicationContext(), RoutesActivity.class);
-                        intent.putExtra("route", route);
-                        startActivity(intent);
-                }).start();
+                // create intent for RoutesActivity and add the route instance to access from RoutesActivity
+                Intent intent = new Intent(getApplicationContext(), RoutesActivity.class);
+                intent.putExtra("route", route);
+                startActivity(intent);
             }
 
             @Override
             public void onCancelled(DatabaseError error) {
                 // Failed to read value
-                Log.w(TAG, "Failed to read value.", error.toException());
+                Log.d(TAG, "Failed to read value.", error.toException());
             }
         });
     }
@@ -219,7 +183,7 @@ public class MainActivity extends AppCompatActivity {
                     progressBar = findViewById(R.id.progressBar);
                     progressBar.setVisibility(View.VISIBLE);
                     // fetch route data from db
-                    fetchData(userInput);
+                    fetchData(userInput.toLowerCase());
                 } else {
                     Toast.makeText(MainActivity.this, "Please, use only letters and numbers", Toast.LENGTH_LONG).show();
                 }
@@ -251,7 +215,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        // if we come from the SETTINGS screen and user provided location permission -> enableApp
+        // if we come from the SETTINGS screen and user provided location permission
+        // then we enable the app
         if (requestCode == 0) {
             enableApp();
         }
