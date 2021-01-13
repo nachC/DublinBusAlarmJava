@@ -1,8 +1,13 @@
 <resources>
     <string name="app_name">Dublin Bus Alarm</string>
+
+    <!-- MainActivity  -->
     <string name="inputLine">Enter Bus Line</string>
     <string name="inputLineHint">e.g. 66b</string>
     <string name="searchBtn">Search</string>
+    <string name="dataSavedTextView">See here what data is saved</string>
+
+    <!-- MapsActivity -->
     <string name="title_activity_maps">Map</string>
     <string name="mapMarkerInfoViewTitle">Selected</string>
 

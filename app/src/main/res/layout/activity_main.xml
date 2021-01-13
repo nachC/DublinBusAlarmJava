@@ -61,7 +61,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/searchLinearLayout"/>
+        app:layout_constraintTop_toBottomOf="@id/searchLinearLayout" />
 
     <TextView
         android:id="@+id/permissionText"
@@ -91,5 +91,18 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/permissionText" />
+
+    <TextView
+        android:id="@+id/dataSavedTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="80dp"
+        android:onClick="showDataSavedDialog"
+        android:text="@string/dataSavedTextView"
+        android:textAllCaps="true"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/permissionBtn" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

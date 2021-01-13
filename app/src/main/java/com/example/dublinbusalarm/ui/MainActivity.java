@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.Manifest;
+import android.app.AlertDialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
@@ -36,16 +37,14 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
-    /**
-     * TODO:
-     * - Add message in main screen to let the user know that we collect some data (Session)
-     * */
-
     // UI elements
     EditText inputLineEditText;
     TextView permissionText;
     Button searchBtn, permissionBtn;
     ProgressBar progressBar;
+
+    // dialog used to show what data is saved to the DB by the app
+    private AlertDialog alertDialog;
 
     private static final String TAG = "MainActivity"; // tag for logging
     private static final String CHANNEL_ID = "alarm_channel"; // identifier for the channel that handles the alarms
@@ -210,6 +209,22 @@ public class MainActivity extends AppCompatActivity {
         } else {
             enableApp();
         }
+    }
+
+    // method to show a AlertDialog with information
+    // regarding what data is saved to the DB
+    public void showDataSavedDialog(View view) {
+        alertDialog = new AlertDialog.Builder(MainActivity.this)
+                .setTitle("Data we save")
+                .setMessage("When the alarm triggers, we save some data to our database. \n" +
+                        "We save exactly four things: \n" +
+                        "- The coordinates of the stop you selected. \n" +
+                        "- Your coordinates at the moment you select a stop \n" +
+                        "- The time it took for the bus to reach the selected stop \n" +
+                        "- The date the trip was made")
+                // A null listener allows the button to dismiss the dialog and take no further action.
+                .setPositiveButton(android.R.string.ok, null)
+                .show();
     }
 
     @Override
