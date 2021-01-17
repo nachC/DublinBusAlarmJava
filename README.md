@@ -1,4 +1,4 @@
-# Dublin Bus Alarm (ongoing project)
+# I'M REDOING THIS PROJECT WITH KOTLIN (github.com/nachc/dublinbusalarm)
 
 Location based alarm app for Dublin Bus service.
 
